@@ -18,6 +18,7 @@ class FiltersViewController: UIViewController, UITableViewDataSource, UITableVie
     weak var delegate : FiltersViewControllerDelegate?
     var categories : [[String:String]]!
     var switchStates : [Int:Bool]!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.delegate = self
@@ -50,7 +51,28 @@ class FiltersViewController: UIViewController, UITableViewDataSource, UITableVie
         delegate?.filtersViewController?(self, didUpdateFilters: filters)
     }
     func yelpCategories() -> [[String:String]]{
-        return [["name":"Test", "code":"test"]]
+        if let path = NSBundle.mainBundle().pathForResource("categories", ofType: "json")
+        {
+            if let jsonData = NSData(contentsOfFile: path)
+            {
+                if let jsonResult: NSDictionary = try! NSJSONSerialization.JSONObjectWithData(jsonData, options: NSJSONReadingOptions.MutableContainers) as? NSDictionary
+                {
+                    if let categories : NSArray = jsonResult[0] as? [NSDictionary]
+                    {
+                        // Do stuff
+                        var toReturn = [[String:String]]()
+                        for cat in categories{
+                            var temp  = [String:String]()
+                            temp["name"] = cat["title"] as? String
+                            temp["code"] = cat["alias"] as? String
+                            toReturn.append(temp)
+                        }
+                        return toReturn
+                    }
+                }
+            }
+        }
+        return [["name":"None", "code":"none"]]
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {

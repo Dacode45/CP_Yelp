@@ -15,6 +15,7 @@ class BusinessesViewController: UIViewController, UITableViewDelegate, UITableVi
             tableView.reloadData()
         }
     }
+    var selectedBusiness : Business?
     var isMoreDataLoading = false
     var loadingMoreView:InfiniteScrollActivityView?
     var searchBar : UISearchBar!
@@ -120,9 +121,11 @@ class BusinessesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     func searchBarCancelButtonClicked(searchBar: UISearchBar) {
         
+        searchBar.resignFirstResponder()
     }
     func searchBarSearchButtonClicked(searchBar: UISearchBar) {
-        
+        reloadData()
+        searchBar.resignFirstResponder()
     }
 
     override func didReceiveMemoryWarning() {
@@ -139,9 +142,15 @@ class BusinessesViewController: UIViewController, UITableViewDelegate, UITableVi
         // Get the new view controller using segue.destinationViewController.
         // Pass the selected object to the new view controller.
         if let navigationController = segue.destinationViewController as? UINavigationController {
-            let filtersViewController = navigationController.topViewController as! FiltersViewController
-            filtersViewController.delegate = self
+            if let filtersViewController = navigationController.topViewController as? FiltersViewController{
+                
+                filtersViewController.delegate = self
+            }else if let businessCellViewController = navigationController.topViewController as? BusinessCellViewController{
+                businessCellViewController.business = businesses[(tableView.indexPathForSelectedRow?.row)!]
+                print("here2")
+            }
         }
+        print("here3")
         
     }
     
@@ -151,7 +160,15 @@ class BusinessesViewController: UIViewController, UITableViewDelegate, UITableVi
         Business.searchWithTerm("Restaurants", sort: nil, categories: categories, deals:nil, offset: nil){
             (businesses:[Business]!, error: NSError!) -> Void in
             self.businesses = businesses
+            
         }
+    }
+    
+    func tableView(tableView: UITableView, didDeselectRowAtIndexPath indexPath: NSIndexPath) {
+        let cell = self.tableView.cellForRowAtIndexPath(indexPath)
+        NSLog("did select and the text is \(cell?.textLabel?.text)")
+        selectedBusiness = businesses[indexPath.row]
+        print("here1")
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {

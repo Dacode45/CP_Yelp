@@ -11,13 +11,23 @@ import CoreLocation
 import MapKit
 class BusinessCellViewController: UIViewController, CLLocationManagerDelegate {
     
-    var business : Business!{
-        didSet{
-            
-        }
-    }
+    @IBOutlet var categoryLabel: UILabel!
+    @IBOutlet var addressLabel: UILabel!
+    @IBOutlet var reviewImageView: UIImageView!
+    @IBOutlet var reviewCountLabel: UILabel!
+    @IBOutlet var distanceLabel: UILabel!
+    @IBOutlet var titleLabel: UILabel!
+    @IBOutlet var thumbImageView: UIImageView!
+    var business : Business!
     @IBOutlet weak var mapView: MKMapView!
     var locationManager : CLLocationManager!
+    var annotation:MKAnnotation!
+    var localSearchRequest:MKLocalSearchRequest!
+    var localSearch:MKLocalSearch!
+    var localSearchResponse:MKLocalSearchResponse!
+    var error:NSError!
+    var pointAnnotation:MKPointAnnotation!
+    var pinAnnotationView:MKPinAnnotationView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,10 +38,44 @@ class BusinessCellViewController: UIViewController, CLLocationManagerDelegate {
         locationManager.distanceFilter = 200
         locationManager.requestWhenInUseAuthorization()
         
-        let centerLocation = CLLocation(latitude: 37.7833, longitude: -122.4167)
-        goToLocation(centerLocation)
-        
+        print(business)
+        titleLabel.text = business.name
+        thumbImageView.setImageWithURL(business.imageURL!)
+        categoryLabel.text = business.categories
+        addressLabel.text = business.address
+        reviewCountLabel.text = "\(business.reviewCount!) Reviews"
+        reviewImageView.setImageWithURL(business.ratingImageURL!)
+        distanceLabel.text = business.distance
         // Do any additional setup after loading the view.
+    }
+    
+    func showLocation(){
+        if self.mapView.annotations.count != 0{
+            annotation = self.mapView.annotations[0]
+            self.mapView.removeAnnotation(annotation)
+        }
+        //2
+        localSearchRequest = MKLocalSearchRequest()
+        localSearchRequest.naturalLanguageQuery = business.address
+        localSearch = MKLocalSearch(request: localSearchRequest)
+        localSearch.startWithCompletionHandler { (localSearchResponse, error) -> Void in
+            
+            if localSearchResponse == nil{
+                let alertController = UIAlertController(title: nil, message: "Place Not Found", preferredStyle: UIAlertControllerStyle.Alert)
+                alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default, handler: nil))
+                self.presentViewController(alertController, animated: true, completion: nil)
+                return
+            }
+            //3
+            self.pointAnnotation = MKPointAnnotation()
+            self.pointAnnotation.title = self.business.name
+            self.pointAnnotation.coordinate = CLLocationCoordinate2D(latitude: localSearchResponse!.boundingRegion.center.latitude, longitude:     localSearchResponse!.boundingRegion.center.longitude)
+            
+            
+            self.pinAnnotationView = MKPinAnnotationView(annotation: self.pointAnnotation, reuseIdentifier: nil)
+            self.mapView.centerCoordinate = self.pointAnnotation.coordinate
+            self.mapView.addAnnotation(self.pinAnnotationView.annotation!)
+        }
     }
 
     override func didReceiveMemoryWarning() {
@@ -50,6 +94,9 @@ class BusinessCellViewController: UIViewController, CLLocationManagerDelegate {
         }
     }
     
+    @IBAction func backButtonPushed(sender: AnyObject) {
+        dismissViewControllerAnimated(true, completion: nil)
+    }
     func locationManager(manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.first {
             let span = MKCoordinateSpanMake(0.1, 0.1)
